@@ -6,9 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../config.dart';
 import '../login_page.dart';
 import 'data_warga_page.dart';
 import 'laporan_keuangan_page.dart';
+import 'penarikan_iuran_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -30,7 +32,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   bool isLoading = true;
   String selectedPeriod = 'monthly'; // weekly, monthly, yearly
-  int _selectedIndex = 0; // 0: Dashboard, 1: Warga, 2: Laporan
+  int _selectedIndex = 0; // 0: Dashboard, 1: Warga, 2: Laporan, 3: Penarikan Iuran
 
   @override
   void initState() {
@@ -41,8 +43,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<void> _fetchDashboardData() async {
     setState(() => isLoading = true);
     try {
-      final summaryRes = await http.get(Uri.parse('http://10.0.2.2:5000/api/admin/dashboard-summary'));
-      final chartRes = await http.get(Uri.parse('http://10.0.2.2:5000/api/admin/dashboard-chart-data?period=$selectedPeriod'));
+      final summaryRes = await http.get(Uri.parse('${AppConfig.baseUrl}/api/admin/dashboard-summary'));
+      final chartRes = await http.get(Uri.parse('${AppConfig.baseUrl}/api/admin/dashboard-chart-data?period=$selectedPeriod'));
 
       if (summaryRes.statusCode == 200 && chartRes.statusCode == 200) {
         final summaryData = json.decode(summaryRes.body);
@@ -88,6 +90,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         return const DataWargaPage();
       case 2:
         return const LaporanKeuanganPage();
+      case 3:
+        return const PenarikanIuranPage();
       default:
         return _buildDashboardContent();
     }
@@ -143,6 +147,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 _buildSidebarItem(0, Icons.dashboard, 'Dashboard'),
                 _buildSidebarItem(1, Icons.people, 'Data Warga'),
                 _buildSidebarItem(2, Icons.account_balance_wallet, 'Laporan Keuangan'),
+                _buildSidebarItem(3, Icons.receipt_long, 'Penarikan Iuran'),
               ],
             ),
           ),

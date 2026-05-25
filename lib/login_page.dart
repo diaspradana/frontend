@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'config.dart';
 import 'admin/admin_dashboard.dart';
 import 'warga/warga_dashboard.dart';
 
@@ -108,7 +109,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       // 2. HTTP POST Request ke backend Node.js
       // Gunakan 10.0.2.2 karena kita menggunakan Android Emulator
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/auth/login'),
+        Uri.parse('${AppConfig.baseUrl}/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'username': username, 'password': password}),
       );
@@ -119,11 +120,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         // Jika status 200 (Login Berhasil)
         final String token = data['token'];
         final String role = data['user']['role'];
+        final String usernameRes = data['user']['username'] ?? username;
 
         // Simpan jwt token dan data role ke shared preferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', token);
         await prefs.setString('user_role', role);
+        await prefs.setString('username', usernameRes);
 
         // Jika Remember Me dicentang, simpan kredensial secara lokal
         if (_rememberMe) {
