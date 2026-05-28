@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'config.dart';
 import 'admin/admin_dashboard.dart';
+import 'admin/approver_dashboard.dart';
 import 'warga/warga_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
@@ -148,6 +149,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const AdminDashboard()),
+          );
+        } else if (role == 'rt' || role == 'rw') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ApproverDashboard()),
           );
         } else if (role == 'warga') {
           Navigator.pushReplacement(

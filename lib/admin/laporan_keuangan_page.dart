@@ -111,7 +111,7 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Konfirmasi Hapus'),
-        content: const Text('Apakah Anda yakin ingin menghapus data pengeluaran ini?'),
+        content: const Text('Apakah Anda yakin ingin menghapus pengajuan dana ini?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -140,10 +140,10 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        _showSuccess('Pengeluaran berhasil dihapus');
+        _showSuccess('Pengajuan dana berhasil dihapus');
         _fetchFinancialData();
       } else {
-        _showError('Gagal menghapus pengeluaran (${response.statusCode})');
+        _showError('Gagal menghapus pengajuan dana (${response.statusCode})');
       }
     } catch (e) {
       _showError('Error: $e');
@@ -176,7 +176,7 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               title: Text(
-                isEdit ? 'Ubah Pengeluaran Kas' : 'Catat Pengeluaran Kas',
+                isEdit ? 'Ubah Pengajuan Dana' : 'Ajukan Dana Baru',
                 style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
               ),
               content: Form(
@@ -290,7 +290,7 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                         if (!mounted) return;
 
                         if (response.statusCode == 200 || response.statusCode == 201) {
-                          _showSuccess(isEdit ? 'Pengeluaran diperbarui' : 'Pengeluaran berhasil dicatat');
+                          _showSuccess(isEdit ? 'Pengajuan dana diperbarui' : 'Pengajuan dana berhasil dikirim');
                           _fetchFinancialData();
                         } else {
                           _showError('Gagal menyimpan data (${response.statusCode})');
@@ -372,7 +372,9 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
     }
 
     for (var p in _pengeluaranList) {
-      totalPengeluaran += _parseDouble(p['jumlah']);
+      if (p['status'] == 'disetujui') {
+        totalPengeluaran += _parseDouble(p['jumlah']);
+      }
     }
 
     double saldoKas = totalPemasukan - totalPengeluaran;
@@ -482,7 +484,7 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                     ),
                     onPressed: () => _showFormDialog(),
                     icon: const Icon(Icons.add),
-                    label: const Text('Catat Pengeluaran'),
+                    label: const Text('Ajukan Dana'),
                   ),
                 ],
               ),
@@ -504,7 +506,7 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                       unselectedLabelColor: Colors.grey,
                       tabs: const [
                         Tab(text: 'Pemasukan (Iuran Warga)'),
-                        Tab(text: 'Pengeluaran Kas'),
+                        Tab(text: 'Pengajuan Dana'),
                       ],
                     ),
                     SizedBox(
@@ -579,6 +581,61 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
     );
   }
 
+  Widget _buildStatusChip(String? status) {
+    Color bgColor;
+    Color textColor;
+    String label;
+
+    switch (status) {
+      case 'menunggu_rt':
+        bgColor = Colors.amber.shade50;
+        textColor = Colors.amber.shade900;
+        label = 'Menunggu RT';
+        break;
+      case 'menunggu_rw':
+        bgColor = Colors.blue.shade50;
+        textColor = Colors.blue.shade900;
+        label = 'Menunggu RW';
+        break;
+      case 'disetujui':
+        bgColor = Colors.green.shade50;
+        textColor = Colors.green.shade900;
+        label = 'Disetujui';
+        break;
+      case 'ditolak_rt':
+        bgColor = Colors.red.shade50;
+        textColor = Colors.red.shade900;
+        label = 'Ditolak RT';
+        break;
+      case 'ditolak_rw':
+        bgColor = Colors.red.shade50;
+        textColor = Colors.red.shade900;
+        label = 'Ditolak RW';
+        break;
+      default:
+        bgColor = Colors.grey.shade100;
+        textColor = Colors.grey.shade700;
+        label = 'Menunggu RT';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: textColor.withOpacity(0.3), width: 0.5),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPengeluaranTable(List<dynamic> items, NumberFormat currencyFormat) {
     if (items.isEmpty) {
       return Center(
@@ -587,7 +644,7 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
           children: [
             Icon(Icons.money_off, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            const Text('Tidak ada data pengeluaran ditemukan.'),
+            const Text('Tidak ada data pengajuan dana ditemukan.'),
           ],
         ),
       );
@@ -600,16 +657,19 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            columnSpacing: 30,
+            columnSpacing: 25,
             headingRowColor: WidgetStateProperty.all(const Color(0xFFF96D6D).withOpacity(0.1)),
             columns: const [
               DataColumn(label: Text('Tanggal', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Jumlah', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Keterangan', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Aksi', style: TextStyle(fontWeight: FontWeight.bold))),
             ],
             rows: items.map<DataRow>((item) {
               final id = item['id'] is int ? item['id'] : int.tryParse(item['id'].toString()) ?? 0;
+              final isApproved = item['status'] == 'disetujui';
+              
               return DataRow(
                 cells: [
                   DataCell(Text(_formatTanggal(item['tanggal']))),
@@ -618,20 +678,27 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent),
                   )),
                   DataCell(Text(item['keterangan']?.toString() ?? '-')),
+                  DataCell(_buildStatusChip(item['status'])),
                   DataCell(
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                          tooltip: 'Edit',
-                          onPressed: () => _showFormDialog(pengeluaran: item),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                          tooltip: 'Delete',
-                          onPressed: () => _deletePengeluaran(id),
-                        ),
+                        if (!isApproved) ...[
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                            tooltip: 'Edit',
+                            onPressed: () => _showFormDialog(pengeluaran: item),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                            tooltip: 'Delete',
+                            onPressed: () => _deletePengeluaran(id),
+                          ),
+                        ] else ...[
+                          const Icon(Icons.lock, color: Colors.grey, size: 16),
+                          const SizedBox(width: 4),
+                          const Text('Terkunci', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        ]
                       ],
                     ),
                   ),
