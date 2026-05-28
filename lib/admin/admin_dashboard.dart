@@ -133,7 +133,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               Icon(Icons.admin_panel_settings, color: Color(0xFF1A6B32), size: 32),
               const SizedBox(width: 8),
-              Text('RT/RW Admin', style: GoogleFonts.almendra(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0C2A15))),
+              Text('Bendahara Admin', style: GoogleFonts.almendra(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0C2A15))),
             ],
           ),
           const SizedBox(height: 40),
@@ -226,8 +226,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Welcome Admin!', style: GoogleFonts.almendra(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF0C2A15))),
-                  Text('Sistem Informasi RT/RW', style: TextStyle(color: Colors.grey.shade500)),
+                  Text('Welcome Bendahara!', style: GoogleFonts.almendra(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF0C2A15))),
+                  Text('Sistem Informasi Keuangan RT/RW', style: TextStyle(color: Colors.grey.shade500)),
                 ],
               ),
               PopupMenuButton<String>(
@@ -267,7 +267,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               final cards = [
                 _buildSummaryCard('Total Warga', '$totalWarga', Icons.group, Colors.white, const Color(0xFFF96D6D)),
                 if (isDesktop) const SizedBox(width: 20) else const SizedBox(height: 10),
-                _buildSummaryCard('Total Iuran', formatTotal(totalIuran), Icons.arrow_downward, Colors.white, const Color(0xFF2CB5B3)),
+                _buildSummaryCard('Total Pemasukan', formatTotal(totalIuran), Icons.arrow_downward, Colors.white, const Color(0xFF2CB5B3)),
                 if (isDesktop) const SizedBox(width: 20) else const SizedBox(height: 10),
                 _buildSummaryCard('Total Pengeluaran', formatTotal(totalPengeluaran), Icons.arrow_upward, Colors.white, const Color(0xFF1A6B32)),
                 if (isDesktop) const SizedBox(width: 20) else const SizedBox(height: 10),
@@ -471,7 +471,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             backgroundColor: const Color(0xFFF7F7F7),
             appBar: AppBar(
               backgroundColor: const Color(0xFF1A6B32),
-              title: const Text('RT/RW Admin', style: TextStyle(color: Colors.white)),
+              title: const Text('bendahara Admin', style: TextStyle(color: Colors.white)),
               iconTheme: const IconThemeData(color: Colors.white),
             ),
             drawer: Drawer(child: _buildSidebar()),

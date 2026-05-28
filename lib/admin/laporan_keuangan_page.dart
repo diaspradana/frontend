@@ -666,23 +666,8 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
 
               // Controls Bar
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      onChanged: (value) => setState(() => _searchQuery = value),
-                      decoration: InputDecoration(
-                        hintText: 'Cari laporan keuangan...',
-                        prefixIcon: const Icon(Icons.search),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2CB5B3),
@@ -707,6 +692,23 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                     label: const Text('Ajukan Dana'),
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Search Bar
+              TextField(
+                onChanged: (value) => setState(() => _searchQuery = value),
+                decoration: InputDecoration(
+                  hintText: 'Cari laporan keuangan...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
 
               const SizedBox(height: 24),

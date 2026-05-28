@@ -176,45 +176,65 @@ class _ApproverDashboardState extends State<ApproverDashboard> {
     return _userRole == 'rt' ? 'Ketua RT' : 'Ketua RW';
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color, Color bgColor) {
+  Widget _buildSummaryCard(String title, String value, IconData icon, Color bgColor, {String? subtitle}) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             )
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  Text(
-                    value,
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ],
-              ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
+            const SizedBox(height: 14),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.3,
               ),
-              child: Icon(icon, color: Colors.white, size: 20),
-            )
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            if (subtitle != null) ...[  
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ],
           ],
         ),
       ),
@@ -576,15 +596,39 @@ class _ApproverDashboardState extends State<ApproverDashboard> {
               children: [
                 Row(
                   children: [
-                    _buildSummaryCard('Pemasukan', currencyFormat.format(totalIuran), Icons.arrow_downward, Colors.white, const Color(0xFF2CB5B3)),
+                    _buildSummaryCard(
+                      'Total Pemasukan',
+                      currencyFormat.format(totalIuran),
+                      Icons.people_alt_outlined,
+                      const Color(0xFF2CB5B3),
+                      subtitle: 'Iuran warga + pemasukan umum',
+                    ),
                     const SizedBox(width: 12),
-                    _buildSummaryCard('Pengeluaran', currencyFormat.format(totalPengeluaran), Icons.arrow_upward, Colors.white, const Color(0xFFF96D6D)),
+                    _buildSummaryCard(
+                      'Pengeluaran Disetujui',
+                      currencyFormat.format(totalPengeluaran),
+                      Icons.arrow_upward,
+                      const Color(0xFFF96D6D),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _buildSummaryCard('Saldo Kas', currencyFormat.format(saldoKas), Icons.account_balance, Colors.white, const Color(0xFF9B51E0)),
+                    _buildSummaryCard(
+                      'Saldo Kas',
+                      currencyFormat.format(saldoKas),
+                      Icons.account_balance_wallet,
+                      const Color(0xFF9B51E0),
+                      subtitle: 'Pemasukan - Pengeluaran Disetujui',
+                    ),
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
+                      'Menunggu Persetujuan',
+                      '${_pendingList.length} Pengajuan',
+                      Icons.pending_actions,
+                      const Color(0xFFE07B39),
+                    ),
                   ],
                 )
               ],
@@ -592,11 +636,37 @@ class _ApproverDashboardState extends State<ApproverDashboard> {
           else
             Row(
               children: [
-                _buildSummaryCard('Total Pemasukan (Iuran)', currencyFormat.format(totalIuran), Icons.arrow_downward, Colors.white, const Color(0xFF2CB5B3)),
-                const SizedBox(width: 16),
-                _buildSummaryCard('Total Pengeluaran Kas', currencyFormat.format(totalPengeluaran), Icons.arrow_upward, Colors.white, const Color(0xFFF96D6D)),
-                const SizedBox(width: 16),
-                _buildSummaryCard('Saldo Kas Saat Ini', currencyFormat.format(saldoKas), Icons.account_balance, Colors.white, const Color(0xFF9B51E0)),
+                _buildSummaryCard(
+                  'Total Pemasukan',
+                  currencyFormat.format(totalIuran),
+                  Icons.people_alt_outlined,
+                  const Color(0xFF2CB5B3),
+                  subtitle: 'Iuran warga + pemasukan umum',
+                ),
+                const SizedBox(width: 14),
+                _buildSummaryCard(
+                  'Total Pengeluaran',
+                  currencyFormat.format(totalPengeluaran),
+                  Icons.arrow_upward,
+                  const Color(0xFFF96D6D),
+                  subtitle: 'Dana yang disetujui',
+                ),
+                const SizedBox(width: 14),
+                _buildSummaryCard(
+                  'Saldo Kas',
+                  currencyFormat.format(saldoKas),
+                  Icons.account_balance_wallet,
+                  const Color(0xFF9B51E0),
+                  subtitle: 'Pemasukan - Pengeluaran Disetujui',
+                ),
+                const SizedBox(width: 14),
+                _buildSummaryCard(
+                  'Menunggu Persetujuan',
+                  '${_pendingList.length} Pengajuan',
+                  Icons.pending_actions,
+                  const Color(0xFFE07B39),
+                  subtitle: 'Perlu tindakan Anda',
+                ),
               ],
             ),
           const SizedBox(height: 30),
