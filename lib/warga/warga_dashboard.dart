@@ -820,7 +820,7 @@ class _WargaDashboardState extends State<WargaDashboard> {
               rows: items.map<DataRow>((item) {
                 return DataRow(
                   cells: [
-                    DataCell(Text(item['nama']?.toString() ?? '-')),
+                    DataCell(Text(item['nama']?.toString() ?? 'Pemasukan Umum')),
                     DataCell(Text(formatTanggal(item['tanggal']))),
                     DataCell(Text(
                       currencyFormat.format(_parseDouble(item['jumlah'])),

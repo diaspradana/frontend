@@ -150,6 +150,214 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
     }
   }
 
+  Future<void> _deleteIuran(int id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: const Text('Apakah Anda yakin ingin menghapus pemasukan ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.delete(
+        Uri.parse('${AppConfig.baseUrl}/api/admin/iuran/$id'),
+      ).timeout(const Duration(seconds: 15));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        _showSuccess('Pemasukan berhasil dihapus');
+        _fetchFinancialData();
+      } else {
+        final body = json.decode(response.body);
+        _showError(body['message'] ?? 'Gagal menghapus pemasukan (${response.statusCode})');
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      _showError('Error: $e');
+    }
+  }
+
+  void _showPemasukanDialog({dynamic iuran}) {
+    final isEdit = iuran != null;
+    final formKey = GlobalKey<FormState>();
+    final nominalController = TextEditingController(
+      text: isEdit ? _parseDouble(iuran['jumlah']).toStringAsFixed(0) : '',
+    );
+    final keteranganController = TextEditingController(
+      text: isEdit ? iuran['keterangan'] ?? '' : '',
+    );
+
+    DateTime selectedDate = isEdit
+        ? DateTime.tryParse(iuran['tanggal'] ?? '') ?? DateTime.now()
+        : DateTime.now();
+
+    final dateTextController = TextEditingController(
+      text: DateFormat('yyyy-MM-dd').format(selectedDate),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              title: Text(
+                isEdit ? 'Ubah Pemasukan' : 'Tambah Pemasukan',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nominal Field
+                      TextFormField(
+                        controller: nominalController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Nominal (Rp)',
+                          prefixText: 'Rp ',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) return 'Nominal wajib diisi';
+                          if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                            return 'Nominal harus angka positif';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Date Selector
+                      TextFormField(
+                        controller: dateTextController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Tanggal',
+                          suffixIcon: Icon(Icons.calendar_today),
+                          border: OutlineInputBorder(),
+                        ),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              selectedDate = picked;
+                              dateTextController.text = DateFormat('yyyy-MM-dd').format(picked);
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Keterangan Field
+                      TextFormField(
+                        controller: keteranganController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          labelText: 'Keterangan / Deskripsi',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) return 'Keterangan wajib diisi';
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A6B32),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      Navigator.pop(context);
+                      setState(() => _isLoading = true);
+
+                      final bodyData = json.encode({
+                        'id_warga': null,
+                        'jumlah': double.parse(nominalController.text),
+                        'tanggal': dateTextController.text,
+                        'keterangan': keteranganController.text.trim(),
+                      });
+
+                      try {
+                        http.Response response;
+                        if (isEdit) {
+                          response = await http.put(
+                            Uri.parse('${AppConfig.baseUrl}/api/admin/iuran/${iuran['id']}'),
+                            headers: {'Content-Type': 'application/json'},
+                            body: bodyData,
+                          ).timeout(const Duration(seconds: 15));
+                        } else {
+                          response = await http.post(
+                            Uri.parse('${AppConfig.baseUrl}/api/admin/iuran'),
+                            headers: {'Content-Type': 'application/json'},
+                            body: bodyData,
+                          ).timeout(const Duration(seconds: 15));
+                        }
+
+                        if (!mounted) return;
+
+                        if (response.statusCode == 200 || response.statusCode == 201) {
+                          _showSuccess(isEdit ? 'Pemasukan berhasil diperbarui' : 'Pemasukan berhasil ditambahkan');
+                          _fetchFinancialData();
+                        } else {
+                          final body = json.decode(response.body);
+                          _showError(body['message'] ?? 'Gagal menyimpan data (${response.statusCode})');
+                          setState(() => _isLoading = false);
+                        }
+                      } catch (e) {
+                        _showError('Error: $e');
+                      }
+                    }
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showFormDialog({dynamic pengeluaran}) {
     final isEdit = pengeluaran != null;
     final formKey = GlobalKey<FormState>();
@@ -477,6 +685,18 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                   const SizedBox(width: 16),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2CB5B3),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => _showPemasukanDialog(),
+                    icon: const Icon(Icons.add_card),
+                    label: const Text('Tambah Pemasukan'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A6B32),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -505,7 +725,7 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                       labelColor: const Color(0xFF1A6B32),
                       unselectedLabelColor: Colors.grey,
                       tabs: const [
-                        Tab(text: 'Pemasukan (Iuran Warga)'),
+                        Tab(text: 'Pemasukan'),
                         Tab(text: 'Pengajuan Dana'),
                       ],
                     ),
@@ -552,18 +772,44 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            columnSpacing: 30,
+            columnSpacing: 24,
             headingRowColor: WidgetStateProperty.all(const Color(0xFF2CB5B3).withOpacity(0.1)),
             columns: const [
+              DataColumn(label: Text('Tipe', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Nama Warga', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('NIK', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Tanggal', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Jumlah', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Keterangan', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Aksi', style: TextStyle(fontWeight: FontWeight.bold))),
             ],
             rows: items.map<DataRow>((item) {
+              final id = item['id'] is int ? item['id'] : int.tryParse(item['id'].toString()) ?? 0;
+              final isSystemEntry = (item['keterangan']?.toString() ?? '').contains('Iuran Berkala Bulan');
+              final isUmum = item['id_warga'] == null;
+
               return DataRow(
                 cells: [
+                  // Tipe badge
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isUmum
+                            ? const Color(0xFF2CB5B3).withOpacity(0.12)
+                            : const Color(0xFF1A6B32).withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isUmum ? 'Umum' : 'Iuran Warga',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isUmum ? const Color(0xFF2CB5B3) : const Color(0xFF1A6B32),
+                        ),
+                      ),
+                    ),
+                  ),
                   DataCell(Text(item['nama']?.toString() ?? '-')),
                   DataCell(Text(item['nik']?.toString() ?? '-')),
                   DataCell(Text(_formatTanggal(item['tanggal']))),
@@ -571,7 +817,40 @@ class _LaporanKeuanganPageState extends State<LaporanKeuanganPage> with SingleTi
                     currencyFormat.format(_parseDouble(item['jumlah'])),
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                   )),
-                  DataCell(Text(item['keterangan']?.toString() ?? '-')),
+                  DataCell(SizedBox(
+                    width: 160,
+                    child: Text(
+                      item['keterangan']?.toString() ?? '-',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )),
+                  // Aksi
+                  DataCell(
+                    isSystemEntry
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.lock, color: Colors.grey, size: 16),
+                              SizedBox(width: 4),
+                              Text('Otomatis', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            ],
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                tooltip: 'Edit',
+                                onPressed: () => _showPemasukanDialog(iuran: item),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                tooltip: 'Hapus',
+                                onPressed: () => _deleteIuran(id),
+                              ),
+                            ],
+                          ),
+                  ),
                 ],
               );
             }).toList(),
